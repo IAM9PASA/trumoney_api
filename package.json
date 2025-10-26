@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@prakrit_m/tmn-voucher": "^1.0.5",
+    "hono": "^4.10.3"
+  }
+}
