@@ -42,12 +42,25 @@ api.post("/redeem", async (c) => {
         const result = await redeemvouchers(phone_number, voucher_url);
 
         if (result.success) {
+            const ticket = result.data.tickets[0];
+
+            if (ticket) {
+                return c.json({
+                    success: true,
+                    status: 200,
+                    message: "รับเงินสำเร็จ",
+                    data: {
+                        name: ticket.full_name,
+                        amount: ticket.amount_baht,
+                    },
+                });
+            }
+
             return c.json({
-                success: true,
-                status: 200,
-                message: "รับเงินสำเร็จ",
-                data: {},
-            });
+                success: false,
+                status: 400,
+                message: "ไมพบผู้รับซอง",
+            }, 400);
         } else {
             const message = convert_message(result);
             return c.json({
@@ -66,6 +79,6 @@ api.post("/redeem", async (c) => {
 });
 
 export default {
+    port: 3002,
     fetch: api.fetch,
-    port: 3001,
 };
