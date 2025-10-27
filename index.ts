@@ -25,60 +25,71 @@ function convert_message(
 api.get("/", (c) => c.text("working"));
 
 api.post("/redeem", async (c) => {
-    const data = await c.req.json();
+    let data;
+    try {
+        data = await c.req.json();
 
-    const phone_number = data.phone_number;
-    const voucher_url = data.voucher_url;
+        const phone_number = data.phone_number;
+        const voucher_url = data.voucher_url;
 
-    if (!phone_number || !voucher_url) {
+        if (!phone_number || !voucher_url) {
+            return c.json({
+                success: false,
+                status: 400,
+                message: "กรุณาระบุเบอร์โทรศัพท์และลิงก์คูปอง",
+            }, 400);
+        }
+
+        try {
+            const result = await redeemvouchers(phone_number, voucher_url);
+
+            if (result.success) {
+                const ticket = result.data.tickets[0];
+
+                if (ticket) {
+                    return c.json({
+                        success: true,
+                        status: 200,
+                        message: "รับเงินสำเร็จ",
+                        data: {
+                            name: ticket.full_name,
+                            amount: ticket.amount_baht,
+                        },
+                    });
+                }
+
+                return c.json({
+                    success: false,
+                    status: 400,
+                    message: "ไมพบผู้รับซอง",
+                }, 400);
+            } else {
+                const message = convert_message(result);
+                return c.json({
+                    success: false,
+                    status: 400,
+                    message: message || "ไม่สามารถรับซองได้",
+                }, 400);
+            }
+        } catch (error) {
+            return c.json({
+                success: false,
+                status: 500,
+                message: (error instanceof Error)
+                    ? error.message
+                    : "Unknown error",
+            }, 500);
+        }
+    } catch {
         return c.json({
             success: false,
             status: 400,
-            message: "กรุณาระบุเบอร์โทรศัพท์และลิงก์คูปอง",
+            message: "ข้อมูลที่ส่งมาไม่ใช่ JSON",
         }, 400);
-    }
-
-    try {
-        const result = await redeemvouchers(phone_number, voucher_url);
-
-        if (result.success) {
-            const ticket = result.data.tickets[0];
-
-            if (ticket) {
-                return c.json({
-                    success: true,
-                    status: 200,
-                    message: "รับเงินสำเร็จ",
-                    data: {
-                        name: ticket.full_name,
-                        amount: ticket.amount_baht,
-                    },
-                });
-            }
-
-            return c.json({
-                success: false,
-                status: 400,
-                message: "ไมพบผู้รับซอง",
-            }, 400);
-        } else {
-            const message = convert_message(result);
-            return c.json({
-                success: false,
-                status: 400,
-                message: message || "ไม่สามารถรับซองได้",
-            }, 400);
-        }
-    } catch (error) {
-        return c.json({
-            success: false,
-            status: 500,
-            message: (error instanceof Error) ? error.message : "Unknown error",
-        }, 500);
     }
 });
 
 export default {
-    port: 3002,
+    port: 3000,
     fetch: api.fetch,
 };
